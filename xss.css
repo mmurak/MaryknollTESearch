@@ -1,0 +1,10 @@
+body, html {
+  font-family: 'Helvetica Neue', 'Lucida Sans Unicode', 'Arial Unicode MS', sans-serif;
+  font-size: 20px;
+}
+.h1 {
+  font-size: 1.5em;
+  color: #333;
+  font-weight: 700;
+  float: left;
+}

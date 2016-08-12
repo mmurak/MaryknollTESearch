@@ -1,0 +1,152 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja">
+	<head>
+		<title>Maryknoll Taiwanese English Dictionary Search</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" >
+		<link rel="shortcut icon" href="favicon.ico?v=2">
+		<link rel="stylesheet" href="xss.css">
+		<script src="./MaryknollTEindex.js"></script>
+		<script src="./resourceLocator.js"></script>
+		<script type="text/javascript">
+			var pdfArea;
+			var MN = 35;
+			var indexArray = [];
+			var pageArray = [];
+			window.onload = function() {
+				window.document.onkeydown = function(evt) {
+					var kc;
+					if (evt) {
+						kc = evt.keyCode;
+					} else {
+						kc = event.keyCode;
+					}
+					if (kc == 27) {
+						clearField();
+					}
+				}
+				initialise();
+			}
+			function initialise() {
+				pdfArea = document.createElement('iframe');
+				window.onresize = function() { resize(); }
+				resize();
+				document.form.entry.focus();
+				for(var i = 0; i < indexData.length; i++) {
+					indexData[i].match(/(.+);(.+)/);
+					var data = RegExp.$1;
+					var page= RegExp.$2;
+					indexArray.push(getInternalCode(data));
+					pageArray.push(page);
+				}
+			}
+			function resize() {
+				pdfArea.setAttribute('width', window.innerWidth - MN);
+				pdfArea.setAttribute('height', window.innerHeight
+					- document.getElementById('controlArea').clientHeight - MN);
+			}
+			function clearField() {
+				document.getElementById('entry').value = ''
+				document.form.entry.focus();
+			}
+			function syllableTokenizer(entry) {
+				var result = [];
+				entry = entry + ' ';			// sentinel
+				entry.match(/^([^\s,\-\(\)]+)([\s,\-\(\)]+)(.*)$/);
+				result.push(RegExp.$1);
+				result.push(RegExp.$2);
+				var rest = RegExp.$3;		// remove sentinel
+				rest = rest.substr(0, rest.length-1);
+				result.push(rest);
+				return result;
+			}
+			function regularise(syl) {
+				if (syl.match(/(\D+)(\d)(\D*)/)) {
+					return RegExp.$1 + RegExp.$3 + RegExp.$2;
+				} else {
+					return syl + '1';
+				}
+			}
+			function codify(syl) {
+				var returnValue = [];
+				syl.match(/(\D+)(\d)/);
+				var body = RegExp.$1;
+				var tone = RegExp.$2;
+				var rValue = body;
+				if (rValue.match(/ou/)) {
+					rValue = rValue.replace(/ou/, 'o');
+					rValue = rValue + 'A';
+				} else if (rValue.match(/\^/)) {
+					rValue = rValue.replace(/\^/, '');
+					rValue = rValue + 'B';
+				}
+				returnValue.push(rValue);
+				returnValue.push(tone);
+				return returnValue;
+			}
+			function getInternalCode(entry) {
+				var result = '';
+				var toneResult = ''
+				while (true) {
+					var sylDelRest = syllableTokenizer(entry)
+					var sylTone = codify(regularise(sylDelRest[0]));
+					result = result + sylTone[0] + ' ';
+					toneResult = toneResult + sylTone[1];
+					entry = sylDelRest[2];
+					if (entry == '') {
+						break;
+					}
+				}
+				return result + toneResult;
+			}
+			function getIndex(targetEntry) {
+				var entry = targetEntry.trim().toLowerCase();
+				var target = getInternalCode(entry);
+				var i = 0;
+				while (i < indexArray.length) {
+					if (indexArray[i] > target) {
+						return pageArray[i-1];
+					} else if (indexArray[i] == target) {
+						return pageArray[i];
+					}
+					i++;
+				}
+				return '';
+			}
+			function  search() {
+				var element = document.getElementById('divPDF').childNodes[0];
+				var volNo;
+				var pageNo;
+				if (element != undefined) {
+					document.getElementById('divPDF').removeChild(element);
+				}
+				targetEntry = document.getElementById('entry').value;
+				var indexString = getIndex(targetEntry);
+				if (indexString.match(/(\d+):(\d+)/)) {
+					volNo = RegExp.$1;
+					pageNo = RegExp.$2
+				} else {
+					volNo = 0;
+					pageNo = 1;
+				}
+				pdfArea.src = resourceLocator[volNo] + '#page=' + pageNo;
+				var div = document.getElementById('divPDF');
+				div.appendChild(pdfArea);
+				document.form.entry.focus();
+			}
+		</script>
+	</head>
+	<body>
+		<div id="controlArea" name="controlArea">
+			<div style="float:left">Tâi-gí:&nbsp;</div>
+			<form name="form" onsubmit="return false" style="float:left">
+				<input type="text" id="entry" name="entry" autocomplete="off" size="60"/>
+				<input type="submit" id="btn" onclick="search()" value="Search (Enter)"/>
+				<input type="button" id="clear" onclick="clearField()" value="Clear (ESC)"/>
+			</form>
+			&nbsp; &nbsp; ^ ⇒ ⁿ&nbsp; &nbsp; ou ⇒ ơ
+			<div style="float:right"><a href="./about.html">About</a></div>
+		</div>
+		<div id="divPDF"></div>
+	</body>
+</html>
